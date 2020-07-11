@@ -21,10 +21,9 @@ async def clock():
 @loop(seconds=5)
 async def change_status():
     await bot.wait_until_ready()
-    while True:
-        await clock()
-        bot.activity = discord.Game(name=f'{clock.time} {clock.day}, {clock.today}')
-        await bot.change_presence(status=discord.Status.online, activity=bot.activity)
+    await clock()
+    bot.activity = discord.Game(name=f'{clock.time} {clock.day}, {clock.today}')
+    await bot.change_presence(status=discord.Status.online, activity=bot.activity)
 
 
 @bot.event
