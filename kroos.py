@@ -1,8 +1,9 @@
 import discord
 from datetime import datetime
 import asyncio
+import os
 
-TOKEN = None
+TOKEN = os.environ['token']
 
 client = discord.Client()
 # id = 135799278336475136
