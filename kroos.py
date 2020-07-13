@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord.ext.tasks import loop
 import os
 import pytz
+from random import randrange
 
 TOKEN = os.environ['token']
 
@@ -30,6 +31,8 @@ async def change_status():
 
 @bot.event
 async def on_ready():
+    global now
+    now = datetime.now()
     print(f"We have logged in as {bot.user}")
     print(f'Client ID = {bot.user.id}')
     print(f'Discord version = {discord.__version__}')
@@ -44,6 +47,7 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
     print(f'{member.name} has joined')
+    await member.add_roles(discord.utils.get(member.guild.roles, name='Member'))
     await bot.get_channel(705808157863313468).send(f'Welcome to Miami Nights, {member.mention}')
 
 
@@ -81,18 +85,85 @@ async def time(ctx):
 
 
 @bot.command()
+async def roll(ctx):
+    await ctx.send(f'{ctx.author.name} rolled {randrange(101)}')
+
+
+@bot.command()
 async def img(ctx):
     await ctx.send(file=discord.File('kroos.jpg'))
 
 
 @bot.command()
-async def commands(ctx):
-    await ctx.send('```list of commands:\n'
-                               '/commands - displays this list\n'
+async def roles(ctx):
+    for x in ctx.guild.roles:
+        if x == '@everyone':
+            continue
+        await ctx.send(f'{x.name}')
+
+
+@bot.command()
+async def role(ctx):
+    await ctx.send(f'')
+
+
+@bot.command()
+async def simp(ctx):
+    user = ctx.message.author
+    role = discord.utils.get(user.guild.roles, name='Simp')
+    if role in user.roles:
+        await user.remove_roles(role)
+        await ctx.send(f'{user.display_name} is not a {role} anymore')
+    else:
+        await user.add_roles(role)
+        await ctx.send(f'{user.display_name} is a {role}')
+
+
+@bot.command()
+async def bonk(ctx, member):
+    if ctx.message.author == ctx.guild.owner:
+        await ctx.send(f'{member} bonked by {ctx.guild.owner.display_name}')
+    else:
+        await ctx.send(f"You can't do that bud")
+
+
+# @bot.event # caches all errors
+# async def on_command_error(ctx, error):
+#     if isinstance(error, commands.MissingRequiredArgument):
+#         await ctx.send(f'Who do you want me to Bonk?')
+
+
+@bonk.error # caches errors for bonk command
+async def bonk_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f'Who do you want me to Bonk?')
+
+
+@bot.command()
+async def stats(ctx):
+    uptime = datetime.now() - now
+    await ctx.send(f'```\n{bot.user.display_name}\n'
+                   f'Mem Usage = tbd\n'
+                   f'Uptime = {str(uptime).split(".", 2)[0]}\n'
+                   f'Server = {bot.get_guild(135799278336475136)}\n'
+                   f'Users = {bot.get_guild(135799278336475136).member_count}\n'
+                   f'Version = {discord.__version__}\n```')
+
+
+@bot.command()
+async def info(ctx):
+    await ctx.send('```\nList of commands:\n'
+                               '/info - displays this list\n'
                                '/time - displays current time\n'
-                               '/ping - displays delay between your pc and discord server\n'
+                               '/ping - displays delay\n'
                                '/hello - greets user\n'
                                '/img - displays kroos.img\n'
+                               '/roll - \n'
+                               '/roles - \n'
+                               '/role - \n'
+                               '/simp - \n'
+                               '/bonk - \n'
+                               '/stats - \n'
                                'Bot is still in developement. More functions to come soon!```')
 
 
