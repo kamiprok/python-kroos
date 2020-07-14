@@ -97,7 +97,10 @@ async def img(ctx):
 
 @bot.command()
 async def status(ctx, user: discord.Member):
-    await ctx.send(f'{user.display_name} is {user.status}')
+    if user in ['self', 'me', 'my']:
+        await ctx.send(f'{ctx.author.display_name} is {ctx.author.status}')
+    else:
+        await ctx.send(f'{user.display_name} is {user.status}')
 
 
 @status.error  # caches errors for status command
