@@ -9,7 +9,7 @@ from asyncio import sleep
 
 TOKEN = os.environ['token']
 
-bot = commands.Bot(command_prefix='/')
+bot = commands.Bot(command_prefix='/', description='Kroos Bot')
 
 
 async def clock():
@@ -64,7 +64,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-@bot.command()
+@bot.command(description='greetings')
 async def hello(ctx):
     await ctx.send(f'Hello there, {ctx.author.mention}!')
 
@@ -97,7 +97,7 @@ async def img(ctx):
 
 @bot.command()
 async def status(ctx, user: discord.Member):
-    if user in {'self', 'me', 'my'}:
+    if user == {'self', 'me', 'my'}:
         await ctx.send(f'{ctx.author.display_name} is {ctx.author.status}')
     else:
         await ctx.send(f'{user.display_name} is {user.status}')
@@ -156,7 +156,7 @@ async def bonk_error(ctx, error):
 @bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
-    await ctx.send(f'```\n{bot.user.display_name}\n'
+    await ctx.send(f'```\n**{bot.user.display_name}**\n'
                    f'Mem Usage = tbd\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
                    f'Server = {bot.get_guild(135799278336475136)}\n'
