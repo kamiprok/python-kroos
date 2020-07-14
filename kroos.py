@@ -5,6 +5,7 @@ from discord.ext.tasks import loop
 import os
 import pytz
 from random import randrange
+from asyncio import sleep
 
 TOKEN = os.environ['token']
 
@@ -95,16 +96,27 @@ async def img(ctx):
 
 
 @bot.command()
+async def status(ctx, user: discord.Member):
+    await ctx.send(f'{user.display_name} is {user.status}')
+
+
+@status.error  # caches errors for status command
+async def status_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f"Who's status to check? (argument required)")
+
+
+@bot.command()  # how to remove @everyone?
 async def roles(ctx):
-    for x in ctx.guild.roles:
-        if x == '@everyone':
+    for role in ctx.guild.roles:
+        if '@everyone' in ctx.guild.roles:
             continue
-        await ctx.send(f'{x.name}')
+        await ctx.send(f'{role.name}')
 
 
-@bot.command()
-async def role(ctx):
-    await ctx.send(f'')
+# @bot.command()  # just declared needs work
+# async def role(ctx):
+#     await ctx.send(f'')
 
 
 @bot.command()
@@ -119,24 +131,23 @@ async def simp(ctx):
         await ctx.send(f'{user.display_name} is a {role}')
 
 
-@bot.command()
-async def bonk(ctx, member):
-    if ctx.message.author == ctx.guild.owner:
-        await ctx.send(f'{member} bonked by {ctx.guild.owner.display_name}')
-    else:
-        await ctx.send(f"You can't do that bud")
+@bot.command()  #not finished
+async def bonk(ctx, user: discord.Member):
+    role = discord.utils.get(user.guild.roles, name='Muted')
+    await user.add_roles(role)
+    await ctx.send(f'{user.display_name} bonked for 10s')
+    await sleep(10)
+    await user.remove_roles(role)
+    await ctx.send(f"{user.display_name}'s timeout is over")
 
 
-# @bot.event # caches all errors
-# async def on_command_error(ctx, error):
-#     if isinstance(error, commands.MissingRequiredArgument):
-#         await ctx.send(f'Who do you want me to Bonk?')
-
-
-@bonk.error # caches errors for bonk command
+@bonk.error  # caches errors for bonk command
 async def bonk_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(f'Who do you want me to Bonk?')
+        if ctx.message.author == ctx.guild.owner:
+            await ctx.send(f'Who do you want me to Bonk?')
+        else:
+            await ctx.send(f"You can't do that bud")
 
 
 @bot.command()
@@ -153,18 +164,24 @@ async def stats(ctx):
 @bot.command()
 async def info(ctx):
     await ctx.send('```\nList of commands:\n'
-                               '/info - displays this list\n'
-                               '/time - displays current time\n'
-                               '/ping - displays delay\n'
-                               '/hello - greets user\n'
-                               '/img - displays kroos.img\n'
-                               '/roll - \n'
-                               '/roles - \n'
-                               '/role - \n'
-                               '/simp - \n'
-                               '/bonk - \n'
-                               '/stats - \n'
+                               '/info - display this list\n'
+                               '/time - display current time\n'
+                               '/ping - display delay\n'
+                               '/hello - greet self\n'
+                               '/img - display image\n'
+                               '/roll - roll dice 0-100\n'
+                               '/roles - see server roles\n'
+                               '/role - tbd\n'
+                               '/simp - assing Simp role to self\n'
+                               '/status {user} - check users status\n'
+                               '/stats - display server stats\n'
                                'Bot is still in developement. More functions to come soon!```')
+
+
+# @bot.event # caches all errors
+# async def on_command_error(ctx, error):
+#     if isinstance(error, commands.MissingRequiredArgument):
+#         await ctx.send(f'Who do you want me to Bonk?')
 
 
 change_status.start()

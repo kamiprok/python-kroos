@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/python-kroos.iml" filepath="$PROJECT_DIR$/.idea/python-kroos.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../python-random/.idea/python-random.iml" filepath="$PROJECT_DIR$/../python-random/.idea/python-random.iml" />
     </modules>
   </component>
 </project>
