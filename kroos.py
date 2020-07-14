@@ -42,7 +42,7 @@ async def on_ready():
     print(f'Status set to OnLine. Set activity to "Playing {clock.time} {clock.day}, {clock.today}"')
     channel = bot.get_channel(705808157863313468)
     print(f'We are in {channel}')
-    await channel.send("I'm Online! Type help for all commands.")
+    await channel.send("I'm Online! Type /info for all commands.")
 
 
 @bot.event
