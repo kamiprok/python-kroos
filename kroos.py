@@ -87,7 +87,7 @@ async def time(ctx):
 
 @bot.command()
 async def roll(ctx):
-    await ctx.send(f'{ctx.author.name} rolled {randrange(101)}')
+    await ctx.send(f'{ctx.author.display_name} rolled {randrange(101)}')
 
 
 @bot.command()
