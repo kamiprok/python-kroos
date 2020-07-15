@@ -10,6 +10,7 @@ from asyncio import sleep
 TOKEN = os.environ['token']
 
 bot = commands.Bot(command_prefix='/', description='Kroos Bot')
+bot.remove_command('help')
 
 
 async def clock():
@@ -42,7 +43,7 @@ async def on_ready():
     print(f'Status set to OnLine. Set activity to "Playing {clock.time} {clock.day}, {clock.today}"')
     channel = bot.get_channel(705808157863313468)
     print(f'We are in {channel}')
-    await channel.send("I'm Online! Type /info for all commands.")
+    await channel.send("I'm Online! Type /help for all commands.")
 
 
 @bot.event
@@ -64,7 +65,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-@bot.command(description='greetings')
+@bot.command()
 async def hello(ctx):
     await ctx.send(f'Hello there, {ctx.author.mention}!')
 
@@ -95,12 +96,9 @@ async def img(ctx):
     await ctx.send(file=discord.File('kroos.jpg'))
 
 
-@bot.command()
+@bot.command()  # user must be valid username
 async def status(ctx, user: discord.Member):
-    if user == {'self', 'me', 'my'}:
-        await ctx.send(f'{ctx.author.display_name} is {ctx.author.status}')
-    else:
-        await ctx.send(f'{user.display_name} is {user.status}')
+    await ctx.send(f'{user.display_name} is {user.status}')
 
 
 @status.error  # caches errors for status command
@@ -109,12 +107,13 @@ async def status_error(ctx, error):
         await ctx.send(f"Who's status to check? (argument required)")
 
 
-@bot.command()  # how to remove @everyone?
+@bot.command()
 async def roles(ctx):
     for role in ctx.guild.roles:
-        if '@everyone' in ctx.guild.roles:
+        if str(role) == '@everyone':
             continue
-        await ctx.send(f'{role.name}')
+        else:
+            await ctx.send(f'{role.name}')
 
 
 # @bot.command()  # just declared needs work
@@ -134,23 +133,42 @@ async def simp(ctx):
         await ctx.send(f'{user.display_name} is a {role}')
 
 
-@bot.command()  #not finished
-async def bonk(ctx, user: discord.Member):
-    role = discord.utils.get(user.guild.roles, name='Muted')
+@bot.command()  # old command to simply add Muted role on top of other roles
+@commands.has_role('Admin' or 'Mod')
+async def warn(ctx, user: discord.Member, seconds: int):  # rewritten to warn so you can warn members
+    role = discord.utils.get(user.guild.roles, name='Warned')
     await user.add_roles(role)
-    await ctx.send(f'{user.display_name} bonked for 10s')
-    await sleep(10)
+    await ctx.send(f'{user.display_name} warned for {seconds} seconds')
+    await sleep(seconds)
     await user.remove_roles(role)
+    await ctx.send(f"{user.display_name}'s warn is over")
+
+
+@warn.error  # caches errors for warn command
+async def warn_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('/warn {user} {seconds}')
+
+
+@bot.command()
+@commands.has_role('Admin' or 'Mod')
+async def bonk(ctx, user: discord.Member, seconds: int):
+    user_roles = []
+    for role in user.roles:
+        user_roles.append(role)
+    muted = []
+    muted.append(discord.utils.get(user.guild.roles, name='Muted'))
+    await user.edit(roles=muted)
+    await ctx.send(f'{user.display_name} bonked for {seconds} seconds')
+    await sleep(seconds)
+    await user.edit(roles=user_roles)
     await ctx.send(f"{user.display_name}'s timeout is over")
 
 
 @bonk.error  # caches errors for bonk command
 async def bonk_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        if ctx.message.author == ctx.guild.owner:
-            await ctx.send(f'Who do you want me to Bonk?')
-        else:
-            await ctx.send(f"You can't do that bud")
+        await ctx.send('/bonk {user} {seconds}')
 
 
 @bot.command()
@@ -165,9 +183,9 @@ async def stats(ctx):
 
 
 @bot.command()
-async def info(ctx):
+async def help(ctx):
     await ctx.send('```\nList of commands:\n'
-                               '/info - display this list\n'
+                               '/help - display this list\n'
                                '/time - display current time\n'
                                '/ping - display delay\n'
                                '/hello - greet self\n'
@@ -181,10 +199,12 @@ async def info(ctx):
                                'Bot is still in developement. More functions to come soon!```')
 
 
-# @bot.event # caches all errors
-# async def on_command_error(ctx, error):
-#     if isinstance(error, commands.MissingRequiredArgument):
-#         await ctx.send(f'Who do you want me to Bonk?')
+@bot.event  # caches all errors
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send(f'No such command. Type /help for list of commands.')
+    if isinstance(error, commands.MissingRole):
+        await ctx.send(f"You can't do that bud")
 
 
 change_status.start()
