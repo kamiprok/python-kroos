@@ -34,11 +34,14 @@ async def change_status():
 @bot.event
 async def on_ready():
     global now
+    global owner
+    owner = bot.get_guild(135799278336475136).owner
     now = datetime.now()
     print(f"We have logged in as {bot.user}")
     print(f'Client ID = {bot.user.id}')
     print(f'Discord version = {discord.__version__}')
     print(f'Server name = {bot.get_guild(135799278336475136)}')
+    print(f'Server owner = {owner.display_name}')
     print(f'Users = {bot.get_guild(135799278336475136).member_count}')
     print(f'Status set to OnLine. Set activity to "Playing {clock.time} {clock.day}, {clock.today}"')
     channel = bot.get_channel(705808157863313468)
@@ -47,8 +50,9 @@ async def on_ready():
 
 
 @bot.event
-async def on_member_join(member):
+async def on_member_join(member):  # dm me when new member joins, dm member with /help
     print(f'{member.name} has joined')
+    await owner.send(f'{member.display_name} ({member}) has joined Miami Nights. Total users: {bot.get_guild(135799278336475136).member_count}')
     await member.add_roles(discord.utils.get(member.guild.roles, name='Member'))
     await bot.get_channel(705808157863313468).send(f'Welcome to Miami Nights, {member.mention}')
 
@@ -87,13 +91,13 @@ async def time(ctx):
 
 
 @bot.command()
-async def roll(ctx):
-    await ctx.send(f'{ctx.author.display_name} rolled {randrange(101)}')
+async def img(ctx):
+    await ctx.send(file=discord.File('kroos.jpg'))
 
 
 @bot.command()
-async def img(ctx):
-    await ctx.send(file=discord.File('kroos.jpg'))
+async def roll(ctx):
+    await ctx.send(f'{ctx.author.display_name} rolled {randrange(101)}')
 
 
 @bot.command()  # user must be valid username
@@ -116,7 +120,7 @@ async def roles(ctx):
             await ctx.send(f'{role.name}')
 
 
-# @bot.command()  # just declared needs work
+# @bot.command()  # just declared needs work. assign self role out of let say 3. all same lvl as Member
 # async def role(ctx):
 #     await ctx.send(f'')
 
@@ -165,6 +169,15 @@ async def bonk(ctx, user: discord.Member, seconds: int):
     await ctx.send(f"{user.display_name}'s timeout is over")
 
 
+@bot.command()
+@commands.has_role('Admin' or 'Mod')
+async def unbonk(ctx, user: discord.Member):
+    role = []
+    role.append(discord.utils.get(user.guild.roles, name='Member'))
+    await user.edit(roles=role)
+    await ctx.send(f'{user.display_name} force unbonked. Temp role Member added until bonk time runs out.')
+
+
 @bonk.error  # caches errors for bonk command
 async def bonk_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
@@ -172,9 +185,17 @@ async def bonk_error(ctx, error):
 
 
 @bot.command()
+async def owner(ctx):
+    if ctx.message.author == owner:
+        await ctx.send(f"That's you {owner.mention}")
+    else:
+        await ctx.send(f'{owner.display_name} is this server owner')
+
+
+@bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
-    await ctx.send(f'```\n**{bot.user.display_name}**\n'
+    await ctx.send(f'```\n{bot.user.display_name}\n'
                    f'Mem Usage = tbd\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
                    f'Server = {bot.get_guild(135799278336475136)}\n'
@@ -185,18 +206,19 @@ async def stats(ctx):
 @bot.command()
 async def help(ctx):
     await ctx.send('```\nList of commands:\n'
-                               '/help - display this list\n'
-                               '/time - display current time\n'
-                               '/ping - display delay\n'
-                               '/hello - greet self\n'
-                               '/img - display image\n'
-                               '/roll - roll dice 0-100\n'
-                               '/roles - see server roles\n'
-                               '/role - tbd\n'
-                               '/simp - assing Simp role to self\n'
-                               '/status {user} - check users status\n'
-                               '/stats - display server stats\n'
-                               'Bot is still in developement. More functions to come soon!```')
+                                '/help - display this list\n'
+                                '/hello - greet self\n'
+                                '/ping - display delay\n'
+                                '/time - display current time\n'
+                                '/img - display image\n'
+                                '/roll - roll dice 0-100\n'
+                                '/roles - see server roles\n'
+                                '/role - tbd\n'
+                                '/simp - assign Simp role to self\n'
+                                '/status {user} - check users status\n'
+                                '/stats - display server stats\n'
+                                '/owner - display server owner\n'
+                                'Bot is still in developement. More functions to come soon!```')
 
 
 @bot.event  # caches all errors
