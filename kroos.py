@@ -194,8 +194,8 @@ async def owner(ctx):
 
 @bot.command()
 @commands.has_role('Admin')
-async def update(ctx):
-    await change_status.start()
+async def restart(ctx):
+    await change_status.restart()
     await ctx.send(f'Change status task restarted.')
 
 
