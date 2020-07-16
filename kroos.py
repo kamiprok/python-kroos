@@ -120,6 +120,15 @@ async def status_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(f"Who's status to check? (argument required)")
 
+
+@bot.command()
+async def good(ctx, kroos: str):
+    global blush
+    if kroos.lower() in ('bot', 'kroos'):
+        blush += 1
+        await ctx.add_reaction(':blush:')
+
+
 # old roles command
 # @bot.command()
 # async def roles(ctx):
@@ -254,16 +263,17 @@ async def stats(ctx):
     await ctx.send(f'```\n{bot.user.display_name}\n'
                    f'Mem Usage = tbd\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
-                   f'Server = {bot.get_guild(135799278336475136)}\n'
-                   f'Users = {bot.get_guild(135799278336475136).member_count}\n'
-                   f'Version = {discord.__version__}\n```')
+                   f'Server = {server_name}\n'
+                   f'Users = {server_name.member_count}\n'
+                   f'Version = {discord.__version__}\n'
+                   f'Blushed = {blush} times```')
 
 
 @bot.command()
 async def help(ctx):
     await ctx.send('```\nList of commands:\n'
                                 '/help - display this list\n'
-                                '/hello - greet self\n'
+                                '/hello - greet yourself\n'
                                 '/ping - display delay\n'
                                 '/time - display current time\n'
                                 '/img - display image\n'
@@ -271,8 +281,8 @@ async def help(ctx):
                                 '/roles - see server roles\n'
                                 '/role - assign one of 3 roles to yourself\n'
                                 '/simp - assign Simp role to yourself\n'
-                                '/status {user} - check users status\n'
-                                '/stats - display server stats\n'
+                                '/status {user} - check user status\n'
+                                '/stats - display server statistics\n'
                                 '/owner - display server owner\n'
                                 'Bot is still in developement. More functions to come soon!```')
 
