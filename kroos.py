@@ -193,6 +193,13 @@ async def owner(ctx):
 
 
 @bot.command()
+@commands.has_role('Admin')
+async def update(ctx):
+    await change_status.start()
+    await ctx.send(f'Change status task restarted.')
+
+
+@bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
     await ctx.send(f'```\n{bot.user.display_name}\n'
