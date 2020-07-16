@@ -11,6 +11,7 @@ TOKEN = os.environ['token']
 
 bot = commands.Bot(command_prefix='/', description='Kroos Bot')
 bot.remove_command('help')
+blush = 0
 
 
 async def clock():
@@ -126,7 +127,8 @@ async def good(ctx, kroos: str):
     global blush
     if kroos.lower() in ('bot', 'kroos'):
         blush += 1
-        await ctx.add_reaction(':blush:')
+        emoji = discord.utils.get(guild.emojis, name='blush')
+        await bot.add_reaction(reply, emoji)
 
 
 # old roles command
@@ -259,6 +261,7 @@ async def owner(ctx):
 
 @bot.command()
 async def stats(ctx):
+    global blush
     uptime = datetime.now() - now
     await ctx.send(f'```\n{bot.user.display_name}\n'
                    f'Mem Usage = tbd\n'
