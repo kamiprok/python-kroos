@@ -31,30 +31,40 @@ async def change_status():
     await bot.change_presence(status=discord.Status.online, activity=activity)
 
 
+@bot.command()
+@commands.has_role('Admin')
+async def restart(ctx):
+    change_status.restart()
+    await ctx.send(f'Change status task restarted.')
+
+
 @bot.event
 async def on_ready():
     global now
-    global owner
-    owner = bot.get_guild(135799278336475136).owner
+    global owner_name
+    global server_name
+    global channel_general
+    owner_name = bot.get_guild(135799278336475136).owner
+    server_name = bot.get_guild(135799278336475136)
+    channel_general = bot.get_channel(705808157863313468)
     now = datetime.now()
     print(f"We have logged in as {bot.user}")
     print(f'Client ID = {bot.user.id}')
     print(f'Discord version = {discord.__version__}')
-    print(f'Server name = {bot.get_guild(135799278336475136)}')
-    print(f'Server owner = {owner.display_name}')
-    print(f'Users = {bot.get_guild(135799278336475136).member_count}')
+    print(f'Server name = {server_name}')
+    print(f'Server owner = {owner_name.display_name}')
+    print(f'Users = {server_name.member_count}')
     print(f'Status set to OnLine. Set activity to "Playing {clock.time} {clock.day}, {clock.today}"')
-    channel = bot.get_channel(705808157863313468)
-    print(f'We are in {channel}')
-    await channel.send("I'm Online! Type /help for all commands.")
+    print(f'We are in {channel_general}')
+    await channel_general.send("I'm Online! Type /help for all commands.")
 
 
 @bot.event
 async def on_member_join(member):  # dm me when new member joins, dm member with /help
     print(f'{member.name} has joined')
-    await owner.send(f'{member.display_name} ({member}) has joined Miami Nights. Total users: {bot.get_guild(135799278336475136).member_count}')
+    await owner_name.send(f'{member.display_name} ({member}) has joined {server_name}. Total users: {server_name.member_count}')
     await member.add_roles(discord.utils.get(member.guild.roles, name='Member'))
-    await bot.get_channel(705808157863313468).send(f'Welcome to Miami Nights, {member.mention}')
+    await channel_general.send(f'Welcome to Miami Nights, {member.mention}')
 
 
 @bot.event
@@ -110,19 +120,65 @@ async def status_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(f"Who's status to check? (argument required)")
 
+# old roles command
+# @bot.command()
+# async def roles(ctx):
+#     for role in ctx.guild.roles:
+#         if str(role) == '@everyone':
+#             continue
+#         else:
+#             await ctx.send(f'{role.name}')
 
+
+# new roles command
 @bot.command()
 async def roles(ctx):
-    for role in ctx.guild.roles:
-        if str(role) == '@everyone':
-            continue
-        else:
-            await ctx.send(f'{role.name}')
+    await ctx.send('Use /role {role_name} command to pick one of 3 roles: Knight, Captain, Baron')
 
 
-# @bot.command()  # just declared needs work. assign self role out of let say 3. all same lvl as Member
-# async def role(ctx):
-#     await ctx.send(f'')
+@bot.command()
+async def role(ctx, affirmation):
+    if affirmation in ('Mod', 'Admin'):
+        await ctx.send('You wish buddy')
+        return
+    user = ctx.message.author
+    roles_names = ['Knight', 'Captain', 'Baron']
+    if affirmation in roles_names:
+        affirmation = discord.utils.get(user.guild.roles, name=affirmation)
+    else:
+        await ctx.send(f'Pick from these 3 only: Knight, Captain, Baron')  # literals for now
+        return
+    if affirmation in user.roles:
+        await user.remove_roles(affirmation)
+        await ctx.send(f'{user.display_name} is no longer a {affirmation.name}')
+        return
+    roles_objects = []
+    user_roles = []
+    for i in roles_names:
+        roles_objects.append(discord.utils.get(user.guild.roles, name=i))
+    for roles in user.roles:
+        user_roles.append(roles)
+    for i in roles_objects:
+        if i in user_roles:
+            user_roles.remove(i)
+    user_roles.append(affirmation)
+    await user.edit(roles=user_roles)
+    await ctx.send(f'{user.display_name} is now a {affirmation.name}')
+
+
+# @bot.command()  # good idea but it removes warns
+# async def norole(ctx):
+#     user = ctx.message.author
+#     role = []
+#     role.append(discord.utils.get(user.guild.roles, name='Member'))
+#     await user.edit(roles=role)
+#     await ctx.send(f'Back to square one huh')
+
+
+@role.error  # caches errors for role command
+async def role_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('Argument required. Type /roles for more info.')
 
 
 @bot.command()
@@ -186,17 +242,10 @@ async def bonk_error(ctx, error):
 
 @bot.command()
 async def owner(ctx):
-    if ctx.message.author == owner:
-        await ctx.send(f"That's you {owner.mention}")
+    if ctx.message.author == owner_name:
+        await ctx.send(f"That's you {owner_name.mention}")
     else:
-        await ctx.send(f'{owner.display_name} is this server owner')
-
-
-@bot.command()
-@commands.has_role('Admin')
-async def restart(ctx):
-    await change_status.restart()
-    await ctx.send(f'Change status task restarted.')
+        await ctx.send(f'{owner_name.display_name} is this server owner')
 
 
 @bot.command()
@@ -220,8 +269,8 @@ async def help(ctx):
                                 '/img - display image\n'
                                 '/roll - roll dice 0-100\n'
                                 '/roles - see server roles\n'
-                                '/role - tbd\n'
-                                '/simp - assign Simp role to self\n'
+                                '/role - assign one of 3 roles to yourself\n'
+                                '/simp - assign Simp role to yourself\n'
                                 '/status {user} - check users status\n'
                                 '/stats - display server stats\n'
                                 '/owner - display server owner\n'
