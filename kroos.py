@@ -4,14 +4,19 @@ from discord.ext import commands
 from discord.ext.tasks import loop
 import os
 import pytz
-from random import randrange
+from random import randrange, choice
 from asyncio import sleep
+import json
 
 TOKEN = os.environ['token']
 
 bot = commands.Bot(command_prefix='/', description='Kroos Bot')
 bot.remove_command('help')
-blush = 0
+
+# init for json file to store variables
+# data = {'blush': 0}
+# with open('data.json', 'w') as f:
+#     json.dump(data, f)
 
 
 async def clock():
@@ -32,11 +37,33 @@ async def change_status():
     await bot.change_presence(status=discord.Status.online, activity=activity)
 
 
+@loop(seconds=randrange(600, 3600))
+async def random_message():
+    await bot.wait_until_ready()
+    if random_message.current_loop == 0:
+        # await bot.get_channel(705808157863313468).send(f"Welcome to {bot.get_guild(135799278336475136)}!")
+        return
+    else:
+        today = datetime.today().strftime('%A')
+        emoji = discord.utils.get(bot.get_guild(135799278336475136).emojis, name='donkey')
+        messages = ['Type /help for list of commands', f'Today is {today}', "I'm Kroos!", "I'm Online!", f'Please obey the server rules {emoji}']
+        rand_msg = choice(messages)
+        await bot.get_channel(705808157863313468).send(f'{rand_msg}')
+
+
+@bot.command()
+@commands.has_role('Admin')
+async def botstatus(ctx):
+    await ctx.message.author.send(f'{change_status.get_task()}\n'
+                                  f'{random_message.get_task()}')
+
+
 @bot.command()
 @commands.has_role('Admin')
 async def restart(ctx):
     change_status.restart()
-    await ctx.send(f'Change status task restarted.')
+    random_message.restart()
+    await ctx.send(f'Background tasks restarted.')
 
 
 @bot.event
@@ -57,7 +84,7 @@ async def on_ready():
     print(f'Users = {server_name.member_count}')
     print(f'Status set to OnLine. Set activity to "Playing {clock.time} {clock.day}, {clock.today}"')
     print(f'We are in {channel_general}')
-    await channel_general.send("I'm Online! Type /help for all commands.")
+    await channel_general.send("I'm Online! Type /help for list of commands.")
 
 
 @bot.event
@@ -66,6 +93,8 @@ async def on_member_join(member):  # dm me when new member joins, dm member with
     await owner_name.send(f'{member.display_name} ({member}) has joined {server_name}. Total users: {server_name.member_count}')
     await member.add_roles(discord.utils.get(member.guild.roles, name='Member'))
     await channel_general.send(f'Welcome to Miami Nights, {member.mention}')
+    await member.send(f'Welcome to Miami Nights, {member.mention}\n'
+                      f'Type /help for list of commands')
 
 
 @bot.event
@@ -113,7 +142,12 @@ async def roll(ctx):
 
 @bot.command()  # user must be valid username
 async def status(ctx, user: discord.Member):
-    await ctx.send(f'{user.display_name} is {user.status}')
+    if user == ctx.message.author:
+        await ctx.send(f'You are {ctx.message.author.status}')
+    elif user == bot.user:
+        await ctx.send(f"I'm Online.")
+    else:
+        await ctx.send(f'{user.display_name} is {user.status}')
 
 
 @status.error  # caches errors for status command
@@ -123,12 +157,14 @@ async def status_error(ctx, error):
 
 
 @bot.command()
-async def good(ctx, kroos: str):
-    global blush
-    if kroos.lower() in ('bot', 'kroos'):
-        blush += 1
-        emoji = discord.utils.get(guild.emojis, name='blush')
-        await bot.add_reaction(reply, emoji)
+async def goodbot(ctx):
+    with open('data.json', 'r') as f:
+        data = json.load(f)
+    data['blush'] += 1
+    with open('data.json', 'w') as f:
+        json.dump(data, f)
+    emoji = discord.utils.get(ctx.guild.emojis, name='pramblush')
+    await ctx.send(emoji)  # it should react to command but for now just sends emoji
 
 
 # old roles command
@@ -144,7 +180,7 @@ async def good(ctx, kroos: str):
 # new roles command
 @bot.command()
 async def roles(ctx):
-    await ctx.send('Use /role {role_name} command to pick one of 3 roles: Knight, Captain, Baron')
+    await ctx.send('Use /role {role_name} command to pick one of 3 roles:\n\nKnight\nCaptain\nBaron')
 
 
 @bot.command()
@@ -153,7 +189,7 @@ async def role(ctx, affirmation):
         await ctx.send('You wish buddy')
         return
     user = ctx.message.author
-    roles_names = ['Knight', 'Captain', 'Baron']
+    roles_names = ['Knight', 'Captain', 'Baron']  # literals for now
     if affirmation in roles_names:
         affirmation = discord.utils.get(user.guild.roles, name=affirmation)
     else:
@@ -205,8 +241,8 @@ async def simp(ctx):
 
 
 @bot.command()  # old command to simply add Muted role on top of other roles
-@commands.has_role('Admin' or 'Mod')
-async def warn(ctx, user: discord.Member, seconds: int):  # rewritten to warn so you can warn members
+@commands.has_role('Admin' or 'Mod')  # rewritten to warn so you can warn members
+async def warn(ctx, user: discord.Member, seconds: int):
     role = discord.utils.get(user.guild.roles, name='Warned')
     await user.add_roles(role)
     await ctx.send(f'{user.display_name} warned for {seconds} seconds')
@@ -261,15 +297,16 @@ async def owner(ctx):
 
 @bot.command()
 async def stats(ctx):
-    global blush
     uptime = datetime.now() - now
+    with open('data.json') as f:
+        data = json.load(f)
     await ctx.send(f'```\n{bot.user.display_name}\n'
                    f'Mem Usage = tbd\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
                    f'Server = {server_name}\n'
                    f'Users = {server_name.member_count}\n'
                    f'Version = {discord.__version__}\n'
-                   f'Blushed = {blush} times```')
+                   f'Blushed = {data.get("blush")} times```')
 
 
 @bot.command()
@@ -287,6 +324,7 @@ async def help(ctx):
                                 '/status {user} - check user status\n'
                                 '/stats - display server statistics\n'
                                 '/owner - display server owner\n'
+                                '/goodbot - prise Kroos!\n'
                                 'Bot is still in developement. More functions to come soon!```')
 
 
@@ -299,4 +337,5 @@ async def on_command_error(ctx, error):
 
 
 change_status.start()
+random_message.start()
 bot.run(TOKEN)
