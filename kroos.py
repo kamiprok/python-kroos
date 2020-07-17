@@ -37,7 +37,8 @@ async def change_status():
     await bot.change_presence(status=discord.Status.online, activity=activity)
 
 
-@loop(seconds=randrange(600, 3600))
+# @loop(seconds=randrange(900, 1800, 300))  # sets random once on start of the loop, should be different every loop
+@loop(seconds=3600)
 async def random_message():
     await bot.wait_until_ready()
     if random_message.current_loop == 0:
@@ -46,7 +47,7 @@ async def random_message():
     else:
         today = datetime.today().strftime('%A')
         emoji = discord.utils.get(bot.get_guild(135799278336475136).emojis, name='donkey')
-        messages = ['Type /help for list of commands', f'Today is {today}', "I'm Kroos!", "I'm Online!", f'Please obey the server rules {emoji}']
+        messages = ['Type /help for list of commands', f'Today is {today}', "I'm Kroos!", "Stay hydrated", f'Please obey the server rules {emoji}']
         rand_msg = choice(messages)
         await bot.get_channel(705808157863313468).send(f'{rand_msg}')
 
@@ -60,10 +61,14 @@ async def botstatus(ctx):
 
 @bot.command()
 @commands.has_role('Admin')
-async def restart(ctx):
-    change_status.restart()
-    random_message.restart()
-    await ctx.send(f'Background tasks restarted.')
+async def restart(ctx, task_name):
+    if task_name == 'all':
+        change_status.restart()
+        random_message.restart()
+        await ctx.send(f'All background tasks restarted')
+    else:
+        task_name.restart()
+    await ctx.send(f'Background tasks {task_name} restarted')
 
 
 @bot.event
@@ -84,7 +89,7 @@ async def on_ready():
     print(f'Users = {server_name.member_count}')
     print(f'Status set to OnLine. Set activity to "Playing {clock.time} {clock.day}, {clock.today}"')
     print(f'We are in {channel_general}')
-    await channel_general.send("I'm Online! Type /help for list of commands.")
+    await channel_general.send("I'm Online! Type /help for list of commands")
 
 
 @bot.event
@@ -145,7 +150,7 @@ async def status(ctx, user: discord.Member):
     if user == ctx.message.author:
         await ctx.send(f'You are {ctx.message.author.status}')
     elif user == bot.user:
-        await ctx.send(f"I'm Online.")
+        await ctx.send(f"I'm Online")
     else:
         await ctx.send(f'{user.display_name} is {user.status}')
 
@@ -225,7 +230,7 @@ async def role(ctx, affirmation):
 @role.error  # caches errors for role command
 async def role_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('Argument required. Type /roles for more info.')
+        await ctx.send('Argument required. Type /roles for more info')
 
 
 @bot.command()
@@ -278,7 +283,7 @@ async def unbonk(ctx, user: discord.Member):
     role = []
     role.append(discord.utils.get(user.guild.roles, name='Member'))
     await user.edit(roles=role)
-    await ctx.send(f'{user.display_name} force unbonked. Temp role Member added until bonk time runs out.')
+    await ctx.send(f'{user.display_name} force unbonked. Temp role Member added until bonk time runs out')
 
 
 @bonk.error  # caches errors for bonk command
@@ -331,7 +336,7 @@ async def help(ctx):
 @bot.event  # caches all errors
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send(f'No such command. Type /help for list of commands.')
+        await ctx.send(f'No such command. Type /help for list of commands')
     if isinstance(error, commands.MissingRole):
         await ctx.send(f"You can't do that bud")
 
