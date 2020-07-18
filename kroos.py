@@ -61,14 +61,10 @@ async def botstatus(ctx):
 
 @bot.command()
 @commands.has_role('Admin')
-async def restart(ctx, task_name):
-    if task_name == 'all':
-        change_status.restart()
-        random_message.restart()
-        await ctx.send(f'All background tasks restarted')
-    else:
-        task_name.restart()
-    await ctx.send(f'Background tasks {task_name} restarted')
+async def restart(ctx):
+    change_status.restart()
+    random_message.restart()
+    await ctx.send(f'Background tasks restarted')
 
 
 @bot.event
