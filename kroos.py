@@ -40,7 +40,7 @@ def index():
     </html>'''
 
 
-partial_run = partial(app.run, host="0.0.0.0", port=80)
+partial_run = partial(app.run, host="0.0.0.0", port=80, debug=True, use_reloader=False)
 
 t = Thread(target=partial_run)
 t.start()
@@ -341,7 +341,7 @@ async def owner(ctx):
 @bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
-    memo = int(ps.virtual_memory().used / 1024 ** 2)
+    memo = int(ps.virtual_memory().active / 1024 ** 2)
     blushed = db.kroos.find_one({'_id': '1'})
     blushed_val = blushed['blushed']
     # with open('data.json') as f:
