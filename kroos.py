@@ -7,11 +7,44 @@ import pytz
 from random import randrange, choice
 from asyncio import sleep
 import json
+from flask import Flask
+from threading import Thread
+from functools import partial
+import psutil as ps
+from pymongo import MongoClient
 
 TOKEN = os.environ['token']
+MongoDBConnectionString = os.environ['MongoDBConnectionString']
+
+
+app = Flask(__name__)
+
+client = MongoClient(MongoDBConnectionString)
+db = client.MongoDB
 
 bot = commands.Bot(command_prefix='/', description='Kroos Bot')
 bot.remove_command('help')
+
+
+@app.route('/')
+def index():
+    return f'''
+    <html>
+        <head>
+            <title>Kroos Discord Bot</title>
+        </head>
+        <body>
+            <h3>{bot.user.name} is Online!</h3>
+            <h4>{now}</h4>
+        </body>
+    </html>'''
+
+
+partial_run = partial(app.run, host="0.0.0.0", port=80)
+
+t = Thread(target=partial_run)
+t.start()
+
 
 # init for json file to store variables
 # data = {'blush': 0}
@@ -47,7 +80,7 @@ async def random_message():
     else:
         today = datetime.today().strftime('%A')
         emoji = discord.utils.get(bot.get_guild(135799278336475136).emojis, name='donkey')
-        messages = ['Type /help for list of commands', f'Today is {today}', "I'm Kroos!", "Stay hydrated", f'Please obey the server rules {emoji}']
+        messages = ['Type /help for list of commands', f'Today is {today}', "What's up?", "Stay hydrated", f'Please obey the server rules {emoji}']
         rand_msg = choice(messages)
         await bot.get_channel(705808157863313468).send(f'{rand_msg}')
 
@@ -65,6 +98,14 @@ async def restart(ctx):
     change_status.restart()
     random_message.restart()
     await ctx.send(f'Background tasks restarted')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def shutdown(ctx):
+    await ctx.send(f'Shutting down')
+    await ctx.bot.logout()
 
 
 @bot.event
@@ -159,12 +200,13 @@ async def status_error(ctx, error):
 
 @bot.command()
 async def goodbot(ctx):
-    with open('data.json', 'r') as f:
-        data = json.load(f)
-    data['blush'] += 1
-    with open('data.json', 'w') as f:
-        json.dump(data, f)
+    # with open('data.json', 'r') as f:
+    #     data = json.load(f)
+    # data['blush'] += 1
+    # with open('data.json', 'w') as f:
+    #     json.dump(data, f)
     emoji = discord.utils.get(ctx.guild.emojis, name='pramblush')
+    db.kroos.find_one_and_update({'_id': '1'}, {'$inc': {'blushed': 1}})
     await ctx.send(emoji)  # it should react to command but for now just sends emoji
 
 
@@ -299,15 +341,19 @@ async def owner(ctx):
 @bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
-    with open('data.json') as f:
-        data = json.load(f)
+    memo = int(ps.virtual_memory().used / 1024 ** 2)
+    blushed = db.kroos.find_one({'_id': '1'})
+    blushed_val = blushed['blushed']
+    # with open('data.json') as f:
+    #     data = json.load(f)
     await ctx.send(f'```\n{bot.user.display_name}\n'
-                   f'Mem Usage = tbd\n'
+                   f'Mem Usage = {round(memo)}M\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
                    f'Server = {server_name}\n'
                    f'Users = {server_name.member_count}\n'
                    f'Version = {discord.__version__}\n'
-                   f'Blushed = {data.get("blush")} times```')
+                   # f'Blushed = {data.get("blush")} times\n'
+                   f'Blushed = {blushed_val} times```')
 
 
 @bot.command()
