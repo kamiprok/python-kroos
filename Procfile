@@ -1,1 +1,1 @@
-web: python kroos.py; worker: python kroos.py
+worker: python kroos.py

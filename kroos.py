@@ -6,71 +6,19 @@ import os
 import pytz
 from random import randrange, choice
 from asyncio import sleep
-import json
-from flask import Flask
-from threading import Thread
-from functools import partial
-import psutil as ps
 from pymongo import MongoClient
-from aiohttp import web
 
 TOKEN = os.environ['token']
 MongoDBConnectionString = os.environ['MongoDBConnectionString']
-port = int(os.environ.get('PORT', 5000))
-
 
 client = MongoClient(MongoDBConnectionString)
+
 db = client.MongoDB
+if db:
+    print('MongoDB connection successful')
 
 bot = commands.Bot(command_prefix='/', description='Kroos Bot')
 bot.remove_command('help')
-
-# aiohttp part
-routes = web.RouteTableDef()
-
-
-@routes.get('/')
-async def index(request):
-    aio_string = randrange(1, 101)
-    aio_now = datetime.now()
-    aio_hello = f'Hello world'
-    return web.Response(text=f'{aio_hello}\n'
-                             f'{aio_now}\n'
-                             f'{aio_string}')
-
-app = web.Application()
-app.add_routes(routes)
-
-
-
-# flask part
-# app = Flask(__name__)
-#
-#
-# @app.route('/')
-# def index():
-#     return f'''
-#     <html>
-#         <head>
-#             <title>Kroos Discord Bot</title>
-#         </head>
-#         <body>
-#             <h3>{bot.user.name} is Online!</h3>
-#             <h4>{now}</h4>
-#         </body>
-#     </html>'''
-#
-#
-# partial_run = partial(app.run, host="0.0.0.0", port=port, debug=True, use_reloader=False)
-#
-# t = Thread(target=partial_run)
-# t.start()
-
-
-# init for json file to store variables
-# data = {'blush': 0}
-# with open('data.json', 'w') as f:
-#     json.dump(data, f)
 
 
 async def clock():
@@ -96,7 +44,6 @@ async def change_status():
 async def random_message():
     await bot.wait_until_ready()
     if random_message.current_loop == 0:
-        # await bot.get_channel(705808157863313468).send(f"Welcome to {bot.get_guild(135799278336475136)}!")
         return
     else:
         today = datetime.today().strftime('%A')
@@ -139,7 +86,6 @@ async def on_ready():
     server_name = bot.get_guild(135799278336475136)
     channel_general = bot.get_channel(705808157863313468)
     now = datetime.now()
-    web.run_app(app, port=port)
     print(f"We have logged in as {bot.user}")
     print(f'Client ID = {bot.user.id}')
     print(f'Discord version = {discord.__version__}')
@@ -222,11 +168,6 @@ async def status_error(ctx, error):
 
 @bot.command()
 async def goodbot(ctx):
-    # with open('data.json', 'r') as f:
-    #     data = json.load(f)
-    # data['blush'] += 1
-    # with open('data.json', 'w') as f:
-    #     json.dump(data, f)
     emoji = discord.utils.get(ctx.guild.emojis, name='pramblush')
     db.kroos.find_one_and_update({'_id': '1'}, {'$inc': {'blushed': 1}})
     await ctx.send(emoji)  # it should react to command but for now just sends emoji
@@ -363,18 +304,13 @@ async def owner(ctx):
 @bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
-    memo = int(ps.virtual_memory().active / 1024 ** 2)
     blushed = db.kroos.find_one({'_id': '1'})
     blushed_val = blushed['blushed']
-    # with open('data.json') as f:
-    #     data = json.load(f)
     await ctx.send(f'```\n{bot.user.display_name}\n'
-                   f'Mem Usage = {round(memo)}M\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
                    f'Server = {server_name}\n'
                    f'Users = {server_name.member_count}\n'
                    f'Version = {discord.__version__}\n'
-                   # f'Blushed = {data.get("blush")} times\n'
                    f'Blushed = {blushed_val} times```')
 
 
