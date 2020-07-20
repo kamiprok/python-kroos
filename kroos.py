@@ -33,7 +33,7 @@ routes = web.RouteTableDef()
 async def index(request):
     aio_string = randrange(1, 101)
     aio_now = datetime.now()
-    aio_hello = f'{bot.user.name} is {bot.user.me}'
+    aio_hello = f'Hello world'
     return web.Response(text=f'{aio_hello}\n'
                              f'{aio_now}\n'
                              f'{aio_string}')
