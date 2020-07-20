@@ -40,7 +40,7 @@ async def index(request):
 
 app = web.Application()
 app.add_routes(routes)
-web.run_app(app, port=port)
+
 
 
 # flask part
@@ -406,4 +406,5 @@ async def on_command_error(ctx, error):
 
 change_status.start()
 random_message.start()
-bot.run(TOKEN)
+bot.start(TOKEN)
+web.run_app(app, port=port)
