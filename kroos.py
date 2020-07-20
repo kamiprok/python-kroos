@@ -12,13 +12,12 @@ from threading import Thread
 from functools import partial
 import psutil as ps
 from pymongo import MongoClient
+from aiohttp import web
 
 TOKEN = os.environ['token']
 MongoDBConnectionString = os.environ['MongoDBConnectionString']
 port = int(os.environ.get('PORT', 5000))
 
-
-app = Flask(__name__)
 
 client = MongoClient(MongoDBConnectionString)
 db = client.MongoDB
@@ -26,25 +25,46 @@ db = client.MongoDB
 bot = commands.Bot(command_prefix='/', description='Kroos Bot')
 bot.remove_command('help')
 
-
-@app.route('/')
-def index():
-    return f'''
-    <html>
-        <head>
-            <title>Kroos Discord Bot</title>
-        </head>
-        <body>
-            <h3>{bot.user.name} is Online!</h3>
-            <h4>{now}</h4>
-        </body>
-    </html>'''
+# aiohttp part
+routes = web.RouteTableDef()
 
 
-partial_run = partial(app.run, host="0.0.0.0", port=port, debug=True, use_reloader=False)
+@routes.get('/')
+async def index(request):
+    aio_string = randrange(1, 101)
+    aio_now = datetime.now()
+    aio_hello = f'{bot.user.name} is {bot.user.me}'
+    return web.Response(text=f'{aio_hello}\n'
+                             f'{aio_now}\n'
+                             f'{aio_string}')
 
-t = Thread(target=partial_run)
-t.start()
+app = web.Application()
+app.add_routes(routes)
+web.run_app(app, port=port)
+
+
+# flask part
+# app = Flask(__name__)
+#
+#
+# @app.route('/')
+# def index():
+#     return f'''
+#     <html>
+#         <head>
+#             <title>Kroos Discord Bot</title>
+#         </head>
+#         <body>
+#             <h3>{bot.user.name} is Online!</h3>
+#             <h4>{now}</h4>
+#         </body>
+#     </html>'''
+#
+#
+# partial_run = partial(app.run, host="0.0.0.0", port=port, debug=True, use_reloader=False)
+#
+# t = Thread(target=partial_run)
+# t.start()
 
 
 # init for json file to store variables
