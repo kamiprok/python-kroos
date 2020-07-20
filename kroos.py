@@ -139,6 +139,7 @@ async def on_ready():
     server_name = bot.get_guild(135799278336475136)
     channel_general = bot.get_channel(705808157863313468)
     now = datetime.now()
+    web.run_app(app, port=port)
     print(f"We have logged in as {bot.user}")
     print(f'Client ID = {bot.user.id}')
     print(f'Discord version = {discord.__version__}')
@@ -406,5 +407,4 @@ async def on_command_error(ctx, error):
 
 change_status.start()
 random_message.start()
-bot.start(TOKEN)
-web.run_app(app, port=port)
+bot.run(TOKEN)
