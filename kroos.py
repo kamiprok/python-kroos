@@ -55,6 +55,7 @@ async def random_message():
 
 @bot.command()
 @commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
 async def botstatus(ctx):
     await ctx.message.author.send(f'{change_status.get_task()}\n'
                                   f'{random_message.get_task()}')
@@ -62,6 +63,7 @@ async def botstatus(ctx):
 
 @bot.command()
 @commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
 async def restart(ctx):
     change_status.restart()
     random_message.restart()
@@ -121,7 +123,9 @@ async def on_message(message):
 
 @bot.command()
 async def hello(ctx):
-    await ctx.send(f'Hello there, {ctx.author.mention}!')
+    resp = ['Hello there', 'Hi', 'Sup', 'Hello', "What's up"]
+    rand_resp = choice(resp)
+    await ctx.send(f'{rand_resp}, {ctx.author.mention}!')
 
 
 @bot.command()
@@ -169,7 +173,7 @@ async def status_error(ctx, error):
 @bot.command()
 async def goodbot(ctx):
     emoji = discord.utils.get(ctx.guild.emojis, name='pramblush')
-    db.kroos.find_one_and_update({'_id': '1'}, {'$inc': {'blushed': 1}})
+    db.kroos.find_one_and_update({'_id': 1}, {'$inc': {'blushed': 1}})
     await ctx.send(emoji)  # it should react to command but for now just sends emoji
 
 
@@ -246,8 +250,8 @@ async def simp(ctx):
         await ctx.send(f'{user.display_name} is a {role}')
 
 
-@bot.command()  # old command to simply add Muted role on top of other roles
-@commands.has_role('Admin' or 'Mod')  # rewritten to warn so you can warn members
+@bot.command()  # old command to simply add Muted role on top of other roles rewritten to warn so you can warn members
+@commands.has_role('Admin' or 'Mod')  # should be has_permissions
 async def warn(ctx, user: discord.Member, seconds: int):
     role = discord.utils.get(user.guild.roles, name='Warned')
     await user.add_roles(role)
@@ -264,7 +268,7 @@ async def warn_error(ctx, error):
 
 
 @bot.command()
-@commands.has_role('Admin' or 'Mod')
+@commands.has_role('Admin' or 'Mod')  # should be has_permissions
 async def bonk(ctx, user: discord.Member, seconds: int):
     user_roles = []
     for role in user.roles:
@@ -279,7 +283,7 @@ async def bonk(ctx, user: discord.Member, seconds: int):
 
 
 @bot.command()
-@commands.has_role('Admin' or 'Mod')
+@commands.has_role('Admin' or 'Mod')  # should be has_permissions
 async def unbonk(ctx, user: discord.Member):
     role = []
     role.append(discord.utils.get(user.guild.roles, name='Member'))
@@ -304,7 +308,7 @@ async def owner(ctx):
 @bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
-    blushed = db.kroos.find_one({'_id': '1'})
+    blushed = db.kroos.find_one({'_id': 1})
     blushed_val = blushed['blushed']
     await ctx.send(f'```\n{bot.user.display_name}\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
