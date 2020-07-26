@@ -478,12 +478,37 @@ async def restart(ctx, task: str):
 @bot.command()
 @commands.has_role('Admin')
 @commands.has_permissions(administrator=True)
+async def load(ctx, module: str):
+    bot.load_extension(module)
+    await ctx.send(f'Module {module} loaded')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def unload(ctx, module: str):
+    bot.unload_extension(module)
+    await ctx.send(f'Module {module} unloaded')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def reload(ctx, module: str):
+    bot.unload_extension(module)
+    bot.load_extension(module)
+    await ctx.send(f'Module {module} reloaded')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
 async def shutdown(ctx):
     await ctx.send(f'Shutting down')
     await ctx.bot.logout()
 
 
-bot.load_extension('cogs.test_cog')
+bot.load_extension('cogs.custom')
 change_status.start()
 random_message.start()
 bot.run(TOKEN)
