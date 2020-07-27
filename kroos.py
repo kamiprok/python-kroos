@@ -1,7 +1,7 @@
 import discord
-from datetime import datetime
 from discord.ext import commands
 from discord.ext.tasks import loop
+from datetime import datetime
 import os
 import pytz
 from random import randrange, choice
@@ -9,19 +9,25 @@ from asyncio import sleep
 from pymongo import MongoClient, errors
 import logging
 import praw
+import json
+import requests
 
 # logging.basicConfig(level=logging.INFO)  # DEBUG
 
-# bot
+# auth
 TOKEN = os.environ['token']
 
+MongoDBConnectionString = os.environ['MongoDBConnectionString']
+
+user_agent = os.environ['user_agent']
+client_id = os.environ['client_id']
+client_secret = os.environ['client_secret']
+
+# bot
 bot = commands.Bot(command_prefix='/', description='Kroos Bot')
 bot.remove_command('help')
 
-
 # db
-MongoDBConnectionString = os.environ['MongoDBConnectionString']
-
 try:
     print('Connecting to DB')
     client = MongoClient(MongoDBConnectionString, serverSelectionTimeoutMS=10000)
@@ -34,22 +40,16 @@ print('DB connection established')
 
 db = client.MongoDB
 
+
 # reddit
-user_agent = os.environ['user_agent']
-client_id = os.environ['client_id']
-client_secret = os.environ['client_secret']
-
-
 def reddit_start():
     reddit = praw.Reddit(user_agent=user_agent,
-                        client_id=client_id,
-                        client_secret=client_secret)
+                         client_id=client_id,
+                         client_secret=client_secret)
     return reddit
 
 
 # time
-
-
 async def clock():
     tz = pytz.timezone('Europe/Warsaw')
     clock.now = datetime.now().astimezone(tz)
@@ -61,8 +61,6 @@ async def clock():
 
 
 # events
-
-
 @bot.event
 async def on_ready():
     global now
@@ -114,8 +112,6 @@ async def on_message(message):
 
 
 # loops
-
-
 @loop(seconds=10)
 async def change_status():
     await bot.wait_until_ready()
@@ -128,28 +124,45 @@ async def change_status():
 helper = 'helper'  # helper string for random_message loop so it won't print the same msg twice in a row
 
 
-@loop(seconds=3600)  # @loop(seconds=randrange(900, 1800, 300))  # sets random once on start of the loop, should be different every loop
+@loop(seconds=1800)  # @loop(seconds=randrange(900, 1800, 300))  # sets random once on start of the loop, should be different every loop
 async def random_message():
     global helper
     await bot.wait_until_ready()
+    general = bot.get_channel(705808157863313468)
     if random_message.current_loop == 0:
         return
     else:
         today = datetime.today().strftime('%A')
         emoji = discord.utils.get(bot.get_guild(135799278336475136).emojis, name='donkey')
-        messages = ['Type /help for list of commands', f'Today is {today}', "What's up?", "Stay hydrated", f'Please obey the server rules {emoji}']
+        data = db.kroos.find_one({'_id': 5})
         while True:
-            rand_msg = choice(messages)
-            if helper != rand_msg:
-                helper = rand_msg
+            item = choice(data['messages'])
+            if item != helper:
+                helper = item
                 break
-        db.kroos.update_one({'_id': 3}, {'$set': {'last_message': rand_msg}, '$inc': {'loop': 1}})
-        await bot.get_channel(705808157863313468).send(f'{rand_msg}')
+        if item == 'today_is':
+            await general.send(f'Today is {today}')
+        elif item == 'random_wiki':
+            response = requests.get('https://en.wikipedia.org/wiki/Special:Random')
+            item = response.url
+            await general.send(f'This might interest you: \n{item}')
+        elif item == 'random_sub':
+            for submission in reddit.subreddit('random').top('day', limit=1):
+                item = submission.shortlink
+                await general.send(f'This might interest you: \n{item}')
+        elif item == 'random_quote':
+            response = requests.get('http://quotes.stormconsultancy.co.uk/random.json')
+            to_dict = json.loads(response.text)
+            await general.send(f'"{to_dict["quote"]}" - {to_dict["author"]}')
+        elif item == 'random_imgur':
+            response = requests.get('https://imgur.com/random')
+            item = response.url
+            await general.send(f'This might interest you: \n{item}')
+        else:
+            await general.send(item)
 
 
 # commands
-
-
 @bot.command()
 async def hello(ctx):
     resp = ['Hello there', 'Hi', 'Sup', 'Hello', "What's up"]
@@ -365,8 +378,6 @@ async def on_command_error(ctx, error):
 
 
 # admin
-
-
 @bot.command()
 @commands.has_role('Admin' or 'Mod')
 async def warn(ctx, user: discord.Member, seconds: int):
