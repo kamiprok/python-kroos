@@ -376,7 +376,120 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRole):
         await ctx.send(f"You can't do that bud")
 
-# admin in cogs
+
+# admin
+@bot.command()
+@commands.has_role('Admin' or 'Mod')
+async def warn(ctx, user: discord.Member, seconds: int):
+    role = discord.utils.get(user.guild.roles, name='Warned')
+    await user.add_roles(role)
+    await ctx.send(f'{user.display_name} warned for {seconds} seconds')
+    await sleep(seconds)
+    await user.remove_roles(role)
+    await ctx.send(f"{user.display_name}'s warn is over")
+
+
+@warn.error  # caches errors for warn command
+async def warn_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('/warn {user} {seconds}')
+
+
+@bot.command()
+@commands.has_role('Admin' or 'Mod')
+async def bonk(ctx, user: discord.Member, seconds: int):
+    user_roles = []
+    for role in user.roles:
+        user_roles.append(role)
+    muted = [discord.utils.get(user.guild.roles, name='Muted')]
+    await user.edit(roles=muted)
+    await ctx.send(f'{user.display_name} bonked for {seconds} seconds')
+    await sleep(seconds)
+    await user.edit(roles=user_roles)
+    await ctx.send(f"{user.display_name}'s timeout is over")
+
+
+@bot.command()
+@commands.has_role('Admin' or 'Mod')
+async def unbonk(ctx, user: discord.Member):
+    role = [discord.utils.get(user.guild.roles, name='Member')]
+    await user.edit(roles=role)
+    await ctx.send(f'{user.display_name} force unbonked. Temp role Member added until bonk time runs out')
+
+
+@bonk.error  # caches errors for bonk command
+async def bonk_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('/bonk {user} {seconds}')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def task(ctx, task: str):  # use "" to parse 2 words as one string
+    if task in ('change status', '1'):
+        await ctx.message.author.send(f'{change_status.get_task()}')
+    elif task in ('random message', '2'):
+        await ctx.message.author.send(f'{random_message.get_task()}')
+    else:
+        await ctx.message.author.send(f'{change_status.get_task()}\n'
+                                      f'{random_message.get_task()}')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def stop(ctx, task: str):
+    if task in ('change status', '1'):
+        change_status.cancel()
+        await ctx.send(f'Change status background task stopped')
+    elif task in ('random message', '2'):
+        random_message.cancel()
+        await ctx.send(f'Random message background task stopped')
+    else:
+        change_status.cancel()
+        random_message.cancel()
+        await ctx.send(f'All background tasks stopped')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def start(ctx, task: str):
+    if task in ('change status', '1'):
+        change_status.start()
+        await ctx.send(f'Change status background task started')
+    elif task in ('random message', '2'):
+        random_message.start()
+        await ctx.send(f'Random message background task started')
+    else:
+        change_status.start()
+        random_message.start()
+        await ctx.send(f'All background tasks started')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def restart(ctx, task: str):
+    if task in ('change status', '1'):
+        change_status.restart()
+        await ctx.send(f'Change status background task restarted')
+    elif task in ('random message', '2'):
+        random_message.restart()
+        await ctx.send(f'Random message background task restarted')
+    else:
+        change_status.restart()
+        random_message.restart()
+        await ctx.send(f'All background tasks restarted')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def shutdown(ctx):
+    await ctx.send(f'Shutting down')
+    await ctx.bot.logout()
 
 
 # extensions
