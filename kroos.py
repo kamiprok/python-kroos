@@ -39,8 +39,8 @@ except errors.OperationFailure:
 print('DB connection established')
 
 db = client.MongoDB
-
-
+data = {'_id': 6, 'bad_words': ['kurwa']}
+db.kroos.insert_one(data)
 # reddit
 def reddit_start():
     reddit = praw.Reddit(user_agent=user_agent,
@@ -378,21 +378,7 @@ async def on_command_error(ctx, error):
 
 
 # admin
-@bot.command()
-@commands.has_role('Admin' or 'Mod')
-async def warn(ctx, user: discord.Member, seconds: int):
-    role = discord.utils.get(user.guild.roles, name='Warned')
-    await user.add_roles(role)
-    await ctx.send(f'{user.display_name} warned for {seconds} seconds')
-    await sleep(seconds)
-    await user.remove_roles(role)
-    await ctx.send(f"{user.display_name}'s warn is over")
 
-
-@warn.error  # caches errors for warn command
-async def warn_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('/warn {user} {seconds}')
 
 
 @bot.command()
