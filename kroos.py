@@ -103,8 +103,8 @@ async def on_message(message):
     for x in message.mentions:
         if x == bot.user:
             await message.channel.send(f'What do you want, {message.author.mention}?')
-    bad_words = ['kurwa']
-    for i in bad_words:
+    data = db.kroos.find_one({'_id': 6})
+    for i in data['bad_words']:
         if i in message.content.lower():
             await message.delete()
             await message.channel.send(f'Language, {message.author.mention}!')
@@ -124,7 +124,7 @@ async def change_status():
 helper = 'helper'  # helper string for random_message loop so it won't print the same msg twice in a row
 
 
-@loop(seconds=1800)  # @loop(seconds=randrange(900, 1800, 300))  # sets random once on start of the loop, should be different every loop
+@loop(seconds=3600)  # @loop(seconds=randrange(900, 1800, 300))  # sets random once on start of the loop, should be different every loop
 async def random_message():
     global helper
     await bot.wait_until_ready()
@@ -376,116 +376,10 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRole):
         await ctx.send(f"You can't do that bud")
 
-
-# admin
-@bot.command()
-@commands.has_role('Admin' or 'Mod')
-async def warn(ctx, user: discord.Member, seconds: int):
-    role = discord.utils.get(user.guild.roles, name='Warned')
-    await user.add_roles(role)
-    await ctx.send(f'{user.display_name} warned for {seconds} seconds')
-    await sleep(seconds)
-    await user.remove_roles(role)
-    await ctx.send(f"{user.display_name}'s warn is over")
+# admin in cogs
 
 
-@warn.error  # caches errors for warn command
-async def warn_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('/warn {user} {seconds}')
-
-
-@bot.command()
-@commands.has_role('Admin' or 'Mod')
-async def bonk(ctx, user: discord.Member, seconds: int):
-    user_roles = []
-    for role in user.roles:
-        user_roles.append(role)
-    muted = []
-    muted.append(discord.utils.get(user.guild.roles, name='Muted'))
-    await user.edit(roles=muted)
-    await ctx.send(f'{user.display_name} bonked for {seconds} seconds')
-    await sleep(seconds)
-    await user.edit(roles=user_roles)
-    await ctx.send(f"{user.display_name}'s timeout is over")
-
-
-@bot.command()
-@commands.has_role('Admin' or 'Mod')
-async def unbonk(ctx, user: discord.Member):
-    role = []
-    role.append(discord.utils.get(user.guild.roles, name='Member'))
-    await user.edit(roles=role)
-    await ctx.send(f'{user.display_name} force unbonked. Temp role Member added until bonk time runs out')
-
-
-@bonk.error  # caches errors for bonk command
-async def bonk_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('/bonk {user} {seconds}')
-
-
-@bot.command()
-@commands.has_role('Admin')
-@commands.has_permissions(administrator=True)
-async def task(ctx, task: str):  # use "" to parse 2 words as one string
-    if task in ('change status', '1'):
-        await ctx.message.author.send(f'{change_status.get_task()}')
-    elif task in ('random message', '2'):
-        await ctx.message.author.send(f'{random_message.get_task()}')
-    else:
-        await ctx.message.author.send(f'{change_status.get_task()}\n'
-                                      f'{random_message.get_task()}')
-
-
-@bot.command()
-@commands.has_role('Admin')
-@commands.has_permissions(administrator=True)
-async def stop(ctx, task: str):
-    if task in ('change status', '1'):
-        change_status.cancel()
-        await ctx.send(f'Change status background task stopped')
-    elif task in ('random message', '2'):
-        random_message.cancel()
-        await ctx.send(f'Random message background task stopped')
-    else:
-        change_status.cancel()
-        random_message.cancel()
-        await ctx.send(f'All background tasks stopped')
-
-
-@bot.command()
-@commands.has_role('Admin')
-@commands.has_permissions(administrator=True)
-async def start(ctx, task: str):
-    if task in ('change status', '1'):
-        change_status.start()
-        await ctx.send(f'Change status background task started')
-    elif task in ('random message', '2'):
-        random_message.start()
-        await ctx.send(f'Random message background task started')
-    else:
-        change_status.start()
-        random_message.start()
-        await ctx.send(f'All background tasks started')
-
-
-@bot.command()
-@commands.has_role('Admin')
-@commands.has_permissions(administrator=True)
-async def restart(ctx, task: str):
-    if task in ('change status', '1'):
-        change_status.restart()
-        await ctx.send(f'Change status background task restarted')
-    elif task in ('random message', '2'):
-        random_message.restart()
-        await ctx.send(f'Random message background task restarted')
-    else:
-        change_status.restart()
-        random_message.restart()
-        await ctx.send(f'All background tasks restarted')
-
-
+# extensions
 @bot.command()
 @commands.has_role('Admin')
 @commands.has_permissions(administrator=True)
@@ -511,14 +405,7 @@ async def reload(ctx, module: str):
     await ctx.send(f'Module {module} reloaded')
 
 
-@bot.command()
-@commands.has_role('Admin')
-@commands.has_permissions(administrator=True)
-async def shutdown(ctx):
-    await ctx.send(f'Shutting down')
-    await ctx.bot.logout()
-
-
+bot.load_extension('cogs.admin')
 bot.load_extension('cogs.custom')
 change_status.start()
 random_message.start()
