@@ -39,8 +39,7 @@ except errors.OperationFailure:
 print('DB connection established')
 
 db = client.MongoDB
-data = {'_id': 6, 'bad_words': ['kurwa']}
-db.kroos.insert_one(data)
+
 # reddit
 def reddit_start():
     reddit = praw.Reddit(user_agent=user_agent,
