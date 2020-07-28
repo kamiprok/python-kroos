@@ -105,6 +105,7 @@ async def on_message(message):
     data = db.kroos.find_one({'_id': 6})
     for i in data['bad_words']:
         if i in message.content.lower():
+            db.kroos.find_one_and_update({'_id': 6}, {'$inc': {'count': 1}})
             await message.delete()
             await message.channel.send(f'Language, {message.author.mention}!')
     await bot.process_commands(message)
@@ -334,37 +335,56 @@ async def reddit_error(ctx, error):
 
 
 @bot.command()
+async def imgur(ctx):
+    response = requests.get('https://imgur.com/random')
+    item = response.url
+    await ctx.send(item)
+
+
+@bot.command()
+async def wiki(ctx):
+    response = requests.get('https://en.wikipedia.org/wiki/Special:Random')
+    item = response.url
+    await ctx.send(item)
+
+
+@bot.command()
 async def stats(ctx):
     uptime = datetime.now() - now
     blushed = db.kroos.find_one({'_id': 1})
     blushed_val = blushed['blushed']
+    bad_words = db.kroos.find_one({'_id': 6})
+    count = bad_words['count']
     await ctx.send(f'```\n{bot.user.display_name}\n'
                    f'Uptime = {str(uptime).split(".", 2)[0]}\n'
                    f'Server = {server_name}\n'
                    f'Users = {server_name.member_count}\n'
                    f'Version = {discord.__version__}\n'
-                   f'Blushed = {blushed_val} times```')
+                   f'Blushed = {blushed_val} times\n'
+                   f'Bad words = {count}```')
 
 
 @bot.command()
 async def help(ctx):
     embed = discord.Embed(title='Kroos')
     embed.add_field(name='List of commands:', value='/help - display this list\n'
-                                '/hello - random greeting\n'
-                                '/ping - display delay\n'
-                                '/time - display current time\n'
-                                '/img - display image\n'
-                                '/roll - roll dice 0-100\n'
-                                '/roles - see server roles\n'
-                                '/role - assign one of 3 roles to yourself\n'
-                                '/simp - assign Simp role to yourself\n'
-                                '/karma {reddit user} - reddit user karma\n'
-                                '/reddit {subreddit} - top post for today\n'
-                                '/status {user} - check user status\n'
-                                '/stats - display server statistics\n'
-                                '/owner - display server owner\n'
-                                '/goodbot - prise Kroos!\n\n'
-                                'Bot is still in development. More functions to come soon!')
+                                                    '/hello - random greeting\n'
+                                                    '/ping - display delay\n'
+                                                    '/time - display current time\n'
+                                                    '/img - display image\n'
+                                                    '/roll - roll dice 0-100\n'
+                                                    '/roles - see server roles\n'
+                                                    '/role - assign one of 3 roles to yourself\n'
+                                                    '/simp - assign Simp role to yourself\n'
+                                                    '/karma {reddit user} - reddit user karma\n'
+                                                    '/reddit {subreddit} - top post for today\n'
+                                                    '/imgur - random imgur post\n'
+                                                    '/wiki - random wiki article\n'
+                                                    '/status {user} - check user status\n'
+                                                    '/stats - display server statistics\n'
+                                                    '/owner - display server owner\n'
+                                                    '/goodbot - prise Kroos!\n\n'
+                                                    'Bot is still in development. More functions to come soon!')
     await ctx.send(embed=embed)
 
 
@@ -377,7 +397,21 @@ async def on_command_error(ctx, error):
 
 
 # admin
+@bot.command()
+@commands.has_role('Admin' or 'Mod')
+async def warn(ctx, user: discord.Member, seconds: int):
+    role = [discord.utils.get(user.guild.roles, name='Warned')]
+    await user.add_roles(role)
+    await ctx.send(f'{user.display_name} warned for {seconds} seconds')
+    await sleep(seconds)
+    await user.remove_roles(role)
+    await ctx.send(f"{user.display_name}'s warn is over")
 
+
+@warn.error  # caches errors for warn command
+async def warn_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('/warn {user} {seconds}')
 
 
 @bot.command()
@@ -472,6 +506,20 @@ async def restart(ctx, task: str):
 @bot.command()
 @commands.has_role('Admin')
 @commands.has_permissions(administrator=True)
+async def add(ctx, word):
+    await ctx.send(f'{word} added to blacklist')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
+async def remove(ctx, word):
+    await ctx.send(f'{word} removed to blacklist')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
 async def shutdown(ctx):
     await ctx.send(f'Shutting down')
     await ctx.bot.logout()
@@ -503,7 +551,6 @@ async def reload(ctx, module: str):
     await ctx.send(f'Module {module} reloaded')
 
 
-bot.load_extension('cogs.admin')
 bot.load_extension('cogs.custom')
 change_status.start()
 random_message.start()
