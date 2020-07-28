@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import kroos
+from asyncio import sleep
 
 
 class Custom(commands.Cog):
@@ -12,6 +13,16 @@ class Custom(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def test(self, ctx):
         await ctx.send('done <:donkey:733436132347347005>')
+
+    @commands.command()
+    @commands.has_role('Admin' or 'Mod')
+    async def warn2(self, ctx, user: discord.Member, seconds: int):
+        warned = discord.utils.get(user.guild.roles, name='Warned')
+        await user.add_roles(warned)
+        await ctx.send(f'{user.display_name} warned for {seconds} seconds')
+        await sleep(seconds)
+        await user.remove_roles(warned)
+        await ctx.send(f"{user.display_name}'s warn is over")
 
     @commands.command()
     @commands.has_role('Admin')

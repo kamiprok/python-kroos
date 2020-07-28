@@ -12,7 +12,7 @@ import praw
 import json
 import requests
 
-# logging.basicConfig(level=logging.INFO)  # DEBUG
+# logging.basicConfig(level=logging.INFO)  # DEBUG # INFO
 
 # auth
 TOKEN = os.environ['token']
@@ -39,6 +39,7 @@ except errors.OperationFailure:
 print('DB connection established')
 
 db = client.MongoDB
+
 
 # reddit
 def reddit_start():
@@ -74,7 +75,7 @@ async def on_ready():
     reddit = reddit_start()
     print(f"We have logged in as {bot.user}")
     print(f'Client ID = {bot.user.id}')
-    print(f'Discord version = {discord.__version__}')
+    print(f'Version = {discord.__version__}')
     print(f'Server name = {server_name}')
     print(f'Server owner = {owner_name.display_name}')
     print(f'Users = {server_name.member_count}')
@@ -97,7 +98,8 @@ async def on_member_join(member):  # dm me when new member joins, dm member with
 @bot.event
 async def on_message(message):
     await clock()
-    # disabled for debug logging
+    if message.author == bot.user:
+        return
     # print(f'{clock.time} {message.author.display_name}({message.author}): {message.content}')
     for x in message.mentions:
         if x == bot.user:
@@ -105,9 +107,13 @@ async def on_message(message):
     data = db.kroos.find_one({'_id': 6})
     for i in data['bad_words']:
         if i in message.content.lower():
+            if message.author == owner_name:
+                return
             db.kroos.find_one_and_update({'_id': 6}, {'$inc': {'count': 1}})
             await message.delete()
             await message.channel.send(f'Language, {message.author.mention}!')
+            await bot.process_commands(message)
+            return
     await bot.process_commands(message)
 
 
@@ -400,11 +406,11 @@ async def on_command_error(ctx, error):
 @bot.command()
 @commands.has_role('Admin' or 'Mod')
 async def warn(ctx, user: discord.Member, seconds: int):
-    role = [discord.utils.get(user.guild.roles, name='Warned')]
-    await user.add_roles(role)
+    warned = discord.utils.get(user.guild.roles, name='Warned')
+    await user.add_roles(warned)
     await ctx.send(f'{user.display_name} warned for {seconds} seconds')
     await sleep(seconds)
-    await user.remove_roles(role)
+    await user.remove_roles(warned)
     await ctx.send(f"{user.display_name}'s warn is over")
 
 
@@ -431,8 +437,8 @@ async def bonk(ctx, user: discord.Member, seconds: int):
 @bot.command()
 @commands.has_role('Admin' or 'Mod')
 async def unbonk(ctx, user: discord.Member):
-    role = [discord.utils.get(user.guild.roles, name='Member')]
-    await user.edit(roles=role)
+    temp_bonk = [discord.utils.get(user.guild.roles, name='Member')]
+    await user.edit(roles=temp_bonk)
     await ctx.send(f'{user.display_name} force unbonked. Temp role Member added until bonk time runs out')
 
 
@@ -506,7 +512,22 @@ async def restart(ctx, task: str):
 @bot.command()
 @commands.has_role('Admin')
 @commands.has_permissions(administrator=True)
+async def blacklist(ctx):
+    blacklist = db.kroos.find_one({'_id': 6})['bad_words']
+    result = ', '.join(blacklist)
+    await ctx.send(f'Blacklist:\n'
+                   f'{result}')
+
+
+@bot.command()
+@commands.has_role('Admin')
+@commands.has_permissions(administrator=True)
 async def add(ctx, word):
+    x = db.kroos.find_one({'_id': 6})['bad_words']
+    if word in x:
+        await ctx.send(f'Word {word} already on blacklist')
+    else:
+        db.kroos.find_one_and_update({'_id': 6}, {'$push': {'bad_words': word}})
     await ctx.send(f'{word} added to blacklist')
 
 
@@ -514,7 +535,12 @@ async def add(ctx, word):
 @commands.has_role('Admin')
 @commands.has_permissions(administrator=True)
 async def remove(ctx, word):
-    await ctx.send(f'{word} removed to blacklist')
+    x = db.kroos.find_one({'_id': 6})['bad_words']
+    if word in x:
+        db.kroos.find_one_and_update({'_id': 6}, {'$pull': {'bad_words': word}})
+        await ctx.send(f'{word} removed from blacklist')
+    else:
+        await ctx.send(f'{word} is not blacklisted')
 
 
 @bot.command()
